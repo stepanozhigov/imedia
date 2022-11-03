@@ -12,3 +12,5 @@ Route::get('/overloads', function () {
 Route::get('/maxloads', function () {
     return inertia('MaxLoads');
 })->name('maxloads');
+
+Route::get('cache/clear', [CallController::class,'cacheClear'])->name('cache.clear');

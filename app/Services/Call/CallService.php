@@ -6,6 +6,7 @@ use Exception;
 use Illuminate\Support\Collection;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 
 class CallService {
@@ -14,9 +15,16 @@ class CallService {
     protected $data;
 
     public function __construct() {
-        $this->json = $this->_loadJson();
-        if($this->json) {
-            $this->data = $this->_processJson($this->json);
+
+        if(Cache::has('data')) {
+            $this->data = Cache::get('data');
+        }
+        else {
+            $this->json = $this->_loadJson();
+            if($this->json) {
+                $this->data = $this->_processJson($this->json);
+                Cache::put('data', $this->data, now()->addMinutes(60));
+            }
         }
     }
 
@@ -35,7 +43,8 @@ class CallService {
                 $item['end_date_time'] = Carbon::parse($item['start_date_time'])
                     ->addSeconds($item['duration_seconds'])
                     ->toDateTimeString();
-
+                $item['start_date_ts'] = Carbon::parse($item['start_date_time'])->timestamp;
+                $item['end_date_ts'] = Carbon::parse($item['end_date_time'])->timestamp;
                 return $item;
             });
         return $collection->toArray();
@@ -47,6 +56,12 @@ class CallService {
 
     public function getData() {
         return $this->data;
+    }
+
+    public function cacheClear() {
+        if(Cache::has('data')) {
+            $this->data = Cache::forget('data');
+        }
     }
 
     public function getDataPagedByDate($date,int $page = 1,$perPage = 25) : array {
@@ -91,5 +106,9 @@ class CallService {
             'calls' => $this->data,
             'count' => count($this->data)
         ];
+    }
+
+    public function getOverloadsByDate($date,int $page = 1,$perPage = 25) {
+
     }
 }

@@ -23,4 +23,9 @@ class CallController extends Controller
             'date' => $request->input('date')
         ]);
     }
+
+    public function cacheClear(CallService $callService) {
+        $callService->cacheClear();
+        return redirect()->route('dashboard');
+    }
 }
