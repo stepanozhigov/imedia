@@ -108,7 +108,45 @@ class CallService {
         ];
     }
 
-    public function getOverloadsByDate($date,int $page = 1,$perPage = 25) {
+    public function getOverloadsByDate($date,$limit = 200,int $page = 1,$perPage = 25) :array {
+
+        $ts_start = Carbon::parse($date)->timestamp;
+        $ts_end = Carbon::parse($date)->addDay()->timestamp;
+
+        $data = collect($this->data)->sortBy([
+            ['start_date_time','desc']
+        ])->take(2000);
+
+
+        $report = collect();
+
+        $seconds = collect(range($ts_start,$ts_end))
+            ->each(function($second) use ($data,&$report) {
+
+                $calls = $data->filter(function($item) use ($second,&$report) {
+
+                    return $item['start_date_ts'] <= $second && $item['end_date_ts'] >= $second;
+
+                });
+
+                $report->put($second,$calls);
+            });
+        return $report
+        ->filter(function($calls,$second) use ($limit) {
+            return $calls->count() > $limit;
+        })
+        ->transform(function($calls,$second) {
+            return [
+                'time' => Carbon::parse($second)->toDateTimeString(),
+                'ts' => $second,
+                'count' => $calls->count()
+            ];
+        })
+        ->values()
+        ->sortBy([
+            ['ts','desc']
+        ])
+        ->toArray();
 
     }
 }

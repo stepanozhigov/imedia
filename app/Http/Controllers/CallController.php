@@ -24,6 +24,20 @@ class CallController extends Controller
         ]);
     }
 
+    public function overloadsIndex(Request $request, CallService $callService) {
+
+        $date = $request->input('date') ? : Carbon::parse('2020-01-27');
+        $page = $request->input('page') ? : 1;
+        $limit = $request->input('limit') ? : 50;
+
+        $data = $callService->getOverloadsByDate($date,$limit,$page);
+
+        return inertia('Overloads',[
+            'limit' => $limit,
+            'data' => $data
+        ]);
+    }
+
     public function cacheClear(CallService $callService) {
         $callService->cacheClear();
         return redirect()->route('dashboard');
