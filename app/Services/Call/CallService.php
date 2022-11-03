@@ -6,6 +6,7 @@ use Exception;
 use Illuminate\Support\Collection;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 
@@ -108,12 +109,11 @@ class CallService {
         ];
     }
 
-    public function getOverloadsByDate($date,$limit = 200,int $page = 1,$perPage = 25) :array {
+    public function getOverloadsByDate($date,$limit = 100,int $page = 1,$perPage = 25) :array {
 
         $ts_start = Carbon::parse($date)->timestamp;
         $ts_end = Carbon::parse($date)->addDay()->timestamp;
         $data = collect($this->data);
-
 
         $report = collect();
 
@@ -147,11 +147,36 @@ class CallService {
 
     }
 
-    public function getMaxLoadsByDate($date,int $page = 1,$perPage = 25) {
+    public function getMaxLoadsByDate($date,$limit,int $page = 1,$perPage = 25) : array {
 
-        $ts_start = Carbon::parse($date)->timestamp;
-        $ts_end = Carbon::parse($date)->addDay()->timestamp;
+        $day_time = Carbon::parse($date);
+        $day_end = Carbon::parse($date)->addDay();
+        $data = collect($this->data);
+        $report = collect();
 
+        while ($day_time->lt($day_end)) {
 
+            $calls = $data->filter(function($item) use ($day_time) {
+
+                $minute_end = Carbon::parse($day_time->toDateTimeString())->addMinute();
+
+                return ($item['start_date_ts'] < $day_time->timestamp && $item['end_date_ts'] >= $day_time->timestamp)
+                || ($item['start_date_ts'] >= $day_time->timestamp && $item['start_date_ts'] < $minute_end->timestamp);
+
+            });
+
+            $calls_count = $calls->count();
+
+            $report->put($day_time->format('Y-m-d H:i'),
+                [
+                    'time' => $day_time->format('Y-m-d H:i'),
+                    'count' => $calls_count,
+                    'status' => $calls_count > $limit ? 'overload' : 'ok'
+                ]
+            );
+
+            $day_time->addMinute();
+        }
+        return $report->sortKeysDesc()->values()->toArray();
     }
 }

@@ -28,11 +28,27 @@ class CallController extends Controller
 
         $date = $request->input('date') ? : Carbon::parse('2020-01-27');
         $page = $request->input('page') ? : 1;
-        $limit = $request->input('limit') ? : 50;
+        $limit = $request->input('limit') ? : 100;
 
         $data = $callService->getOverloadsByDate($date,$limit,$page);
 
         return inertia('Overloads',[
+            'date' => $date,
+            'limit' => $limit,
+            'data' => $data
+        ]);
+    }
+
+    public function maxLoadsIndex(Request $request, CallService $callService) {
+
+        $date = $request->input('date') ? : Carbon::parse('2020-01-27');
+        $page = $request->input('page') ? : 1;
+        $limit = $request->input('limit') ? : 100;
+
+        $data = $callService->getMaxLoadsByDate($date,$limit,$page);
+
+        return inertia('MaxLoads',[
+            'date' => $date,
             'limit' => $limit,
             'data' => $data
         ]);
