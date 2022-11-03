@@ -112,10 +112,7 @@ class CallService {
 
         $ts_start = Carbon::parse($date)->timestamp;
         $ts_end = Carbon::parse($date)->addDay()->timestamp;
-
-        $data = collect($this->data)->sortBy([
-            ['start_date_time','desc']
-        ])->take(2000);
+        $data = collect($this->data);
 
 
         $report = collect();
@@ -147,6 +144,14 @@ class CallService {
             ['ts','desc']
         ])
         ->toArray();
+
+    }
+
+    public function getMaxLoadsByDate($date,int $page = 1,$perPage = 25) {
+
+        $ts_start = Carbon::parse($date)->timestamp;
+        $ts_end = Carbon::parse($date)->addDay()->timestamp;
+
 
     }
 }
