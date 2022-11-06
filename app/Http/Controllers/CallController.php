@@ -15,12 +15,16 @@ class CallController extends Controller
     public function index(Request $request,CallService $callService) {
 
         $page = $request->input('page') ? : 1;
+        $date = $request->input('date') ? : '2020-01-27';
+        $perPage = $request->input('onPage') ? : 25;
 
-        $data = $callService->getDataPagedByDate($request->input('date'),$page);
-
+        $data = $callService->getDataPagedByDate($date,$page,$perPage);
         return inertia('Dashboard',[
-            'data' => $data,
-            'date' => $request->input('date')
+            'date' => $data['date'],
+            'calls' => $data['calls'],
+            'count' => $data['count'],
+            'page' => $data['page'],
+            'onPage' =>$data['onPage']
         ]);
     }
 

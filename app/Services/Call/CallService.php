@@ -65,47 +65,50 @@ class CallService {
         }
     }
 
-    public function getDataPagedByDate($date,int $page = 1,$perPage = 25) : array {
+    public static function paginateData(Collection $data, int $page = 1, int $perPage) : Collection {
+
+        $dataCount = $data->count();
+        $pageCount = ceil($dataCount/$perPage);
+
+        if($page > $pageCount) $page  = 1;
+
+        return collect([
+            'data' => $data
+            ->skip(($perPage*($page-1)+1))
+            ->take($perPage-1),
+            'page' => $page
+        ]);
+    }
+
+    public function getDataPagedByDate($date,int $page,int $perPage) : array {
 
         $data = collect($this->data)->sortBy([
             ['start_date_time','desc']
         ]);
 
-        if($date) {
-            $day_start = Carbon::parse($date);
-            $day_end = Carbon::parse($date)->addDay();
+        $day_start = Carbon::parse($date);
+        $day_end = Carbon::parse($date)->addDay();
 
-            $filered_data = collect($data)
-            ->filter(function($item) use ($date,$day_start,$day_end){
+        $filered_data = collect($data)
+        ->filter(function($item) use ($date,$day_start,$day_end){
 
-                $item_start_date_time = Carbon::parse($item['start_date_time']);
+            $item_start_date_time = Carbon::parse($item['start_date_time']);
 
-                return
-                    ($item_start_date_time->gte($day_start))
-                    && ($item_start_date_time->lt($day_end));
-            });
+            return
+                ($item_start_date_time->gte($day_start))
+                && ($item_start_date_time->lt($day_end));
+        });
 
-            //paginate
-            $count = $filered_data->count();
-
-
-            return [
-                'date' => $date,
-                'date_start' => $day_start->toDateTimeString(),
-                'date_end' => $day_end->toDateTimeString(),
-                'calls' => $filered_data->toArray(),
-                'count' => $count
-            ];
-        }
-
-        //paginate
+        $pagination = self::paginateData($filered_data,$page,$perPage)->toArray();
 
         return [
-            'date' => null,
-            'date_start' => null,
-            'date_end' => null,
-            'calls' => $this->data,
-            'count' => count($this->data)
+            'date' => $date,
+            'date_start' => $day_start->toDateTimeString(),
+            'date_end' => $day_end->toDateTimeString(),
+            'calls' => $pagination['data'],
+            'count' => $filered_data->count(),
+            'page'  => $pagination['page'],
+            'onPage' => $perPage
         ];
     }
 
