@@ -29,7 +29,10 @@
                     >
                         <td class="px-4 py-3">{{ item.time }}</td>
                         <td class="px-4 py-3">{{ item.count }}</td>
-                        <td class="px-4 py-3">{{ item.status }}</td>
+                        <td class="px-4 py-3">
+                            <span v-if="item.status == 'ok'" class="inline-flex items-center justify-center px-2 py-1 font-bold leading-none text-green-100 bg-green-600 rounded-full">{{item.status}}</span>
+                            <span v-if="item.status == 'overload'" class="inline-flex items-center justify-center px-2 py-1 font-bold leading-none text-red-100 bg-red-600 rounded-full">{{item.status}}</span>
+                        </td>
                     </tr>
                   </tbody>
             </table>
