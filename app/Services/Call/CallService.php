@@ -12,6 +12,9 @@ use Illuminate\Support\Facades\Storage;
 
 class CallService {
 
+    const OVERLOAD_RATE_PER_SECOND = 100;
+    const OVERLOAD_RATE_PER_MINUTE = 100;
+
     protected $json;
     protected $data;
 
@@ -60,9 +63,7 @@ class CallService {
     }
 
     public function cacheClear() {
-        if(Cache::has('data')) {
-            $this->data = Cache::forget('data');
-        }
+        Cache::flush();
     }
 
     public static function paginateData(Collection $data, int $page = 1, int $perPage) : Collection {
@@ -74,8 +75,8 @@ class CallService {
 
         return collect([
             'data' => $data
-            ->skip(($perPage*($page-1)+1))
-            ->take($perPage-1),
+                ->skip(($perPage*($page-1)+1))
+                ->take($perPage-1),
             'page' => $page
         ]);
     }
@@ -112,15 +113,22 @@ class CallService {
         ];
     }
 
-    public function getOverloadsByDate($date,$limit = 100,int $page = 1,$perPage = 25) :array {
+    public function getOverloadsByDate(string $date,int $limit,int $page,int $perPage) :array {
 
         $ts_start = Carbon::parse($date)->timestamp;
         $ts_end = Carbon::parse($date)->addDay()->timestamp;
         $data = collect($this->data);
+        $cacheDate = Carbon::parse($date)->format('Ymd');
 
-        $report = collect();
+        if(Cache::has("overloads_{$cacheDate}_{$limit}")) {
 
-        $seconds = collect(range($ts_start,$ts_end))
+            $report_data = collect(Cache::get("overloads_{$cacheDate}_{$limit}"));
+            
+        } else {
+
+            $report = collect();
+
+            $seconds = collect(range($ts_start,$ts_end))
             ->each(function($second) use ($data,&$report) {
 
                 $calls = $data->filter(function($item) use ($second,&$report) {
@@ -131,23 +139,37 @@ class CallService {
 
                 $report->put($second,$calls);
             });
-        return $report
-        ->filter(function($calls,$second) use ($limit) {
-            return $calls->count() > $limit;
-        })
-        ->transform(function($calls,$second) {
-            return [
-                'time' => Carbon::parse($second)->toDateTimeString(),
-                'ts' => $second,
-                'count' => $calls->count()
-            ];
-        })
-        ->values()
-        ->sortBy([
-            ['ts','desc']
-        ])
-        ->toArray();
 
+            $report_data = $report
+            ->filter(function($calls,$second) use ($limit) {
+                return $calls->count() > $limit;
+            })
+            ->transform(function($calls,$second) {
+                return [
+                    'time' => Carbon::parse($second)->toDateTimeString(),
+                    'ts' => $second,
+                    'count' => $calls->count()
+                ];
+            })
+            ->values()
+            ->sortBy([
+                ['ts','desc']
+            ]);
+            Cache::put("overloads_{$cacheDate}_{$limit}", $report_data->toArray(), now()->addMinutes(60));
+        }
+
+        $pagination = self::paginateData($report_data,$page,$perPage)->toArray();
+
+        return [
+            'date' => $date,
+            'limit' => $limit,
+            'ts_start' => $ts_start,
+            'ts_end' => $ts_end,
+            'data' => $pagination['data'],
+            'count' => $report_data->count(),
+            'page'  => $pagination['page'],
+            'onPage' => $perPage
+        ];
     }
 
     public function getMaxLoadsByDate($date,$limit,int $page = 1,$perPage = 25) : array {

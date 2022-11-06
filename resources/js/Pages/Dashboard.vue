@@ -29,14 +29,16 @@
                     </tr>
                   </tbody>
             </table>
+            <pagination
+                v-if="count>0"
+                :date="selectedDate"
+                :page="selectedPage"
+                :count="count"
+                :onPage="onPage"
+                :route="'/'"
+                :limit=0
+            ></pagination>
         </div>
-        <pagination
-            v-if="count>0"
-            :date="selectedDate"
-            :page="selectedPage"
-            :count="count"
-            :onPage="onPage"
-        ></pagination>
     </section>
 </template>
 <script>
@@ -58,7 +60,7 @@
             calls: Object,
             count: Number,
             page: Number,
-            onPage: Number
+            onPage: Number,
         },
         watch: {
             selectedDate() {this.changeDate();}

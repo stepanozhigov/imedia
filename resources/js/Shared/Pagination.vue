@@ -58,7 +58,9 @@
             date: String,
             count: Number,
             page: Number,
-            onPage: Number
+            onPage: Number,
+            route: String,
+            limit: Number
         },
         data() {
             return {
@@ -90,24 +92,29 @@
                 if(this.selectedPage >= this.pagesTotal) this.selectedPage=1;
                 else this.selectedPage=this.selectedPage+1;
 
-                this.getCalls();
+                this.getData();
             },
             pageDown() {
                 if(this.selectedPage == 1) this.selectedPage=this.pagesTotal;
                 else this.selectedPage=this.selectedPage-1;
 
-                this.getCalls();
+                this.getData();
             },
             toFirstPage() {
                 this.selectedPage=1;
-                this.getCalls();
+                this.getData();
             },
             toLastPage() {
                 this.selectedPage=this.pagesTotal;
-                this.getCalls();
+                this.getData();
             },
-            getCalls() {
-                Inertia.get('/',{ date: this.date, page: this.selectedPage, onPage: this.onPage}, {
+            getData() {
+                Inertia.get(this.route,{
+                    date: this.date,
+                    page: this.selectedPage,
+                    onPage: this.onPage,
+                    limit: this.limit
+                }, {
                     preserveState: true, preserveScroll: true
                 });
             }

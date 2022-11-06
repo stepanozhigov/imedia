@@ -16,7 +16,7 @@ class CallController extends Controller
 
         $page = $request->input('page') ? : 1;
         $date = $request->input('date') ? : '2020-01-27';
-        $perPage = $request->input('onPage') ? : 25;
+        $perPage = $request->input('onPage') ? : 100;
 
         $data = $callService->getDataPagedByDate($date,$page,$perPage);
         return inertia('Dashboard',[
@@ -30,16 +30,20 @@ class CallController extends Controller
 
     public function overloadsIndex(Request $request, CallService $callService) {
 
-        $date = $request->input('date') ? : Carbon::parse('2020-01-27');
+        $date = $request->input('date') ? : '2020-01-27';
         $page = $request->input('page') ? : 1;
-        $limit = $request->input('limit') ? : 100;
+        $limit = $request->input('limit') ? : $callService::OVERLOAD_RATE_PER_SECOND;
+        $perPage = $request->input('onPage') ? : 25;
 
-        $data = $callService->getOverloadsByDate($date,$limit,$page);
+        $data = $callService->getOverloadsByDate($date,$limit,$page,$perPage);
 
         return inertia('Overloads',[
-            'date' => $date,
-            'limit' => $limit,
-            'data' => $data
+            'date' => $data['date'],
+            'data' => $data['data'],
+            'limit' => $data['limit'],
+            'count' => $data['count'],
+            'page' => $data['page'],
+            'onPage' =>$data['onPage']
         ]);
     }
 
@@ -47,7 +51,7 @@ class CallController extends Controller
 
         $date = $request->input('date') ? : Carbon::parse('2020-01-27');
         $page = $request->input('page') ? : 1;
-        $limit = $request->input('limit') ? : 100;
+        $limit = $request->input('limit') ? : $callService::OVERLOAD_RATE_PER_MINUTE;
 
         $data = $callService->getMaxLoadsByDate($date,$limit,$page);
 
