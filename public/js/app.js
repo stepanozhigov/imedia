@@ -19558,6 +19558,7 @@ __webpack_require__.r(__webpack_exports__);
     };
   },
   props: {
+    date: String,
     data: Object,
     limit: Number
   }

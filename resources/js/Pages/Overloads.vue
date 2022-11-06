@@ -41,6 +41,7 @@
             }
         },
         props: {
+            date:String,
             data: Object,
             limit: Number
         },
