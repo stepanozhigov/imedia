@@ -123,7 +123,7 @@ class CallService {
         if(Cache::has("overloads_{$cacheDate}_{$limit}")) {
 
             $report_data = collect(Cache::get("overloads_{$cacheDate}_{$limit}"));
-            
+
         } else {
 
             $report = collect();
@@ -172,36 +172,59 @@ class CallService {
         ];
     }
 
-    public function getMaxLoadsByDate($date,$limit,int $page = 1,$perPage = 25) : array {
+    public function getMaxLoadsByDate($date,int $limit,int $page = 1,int $perPage = 25) : array {
 
         $day_time = Carbon::parse($date);
         $day_end = Carbon::parse($date)->addDay();
         $data = collect($this->data);
-        $report = collect();
+        $cacheDate = $day_time->format('Ymd');
 
-        while ($day_time->lt($day_end)) {
+        if(Cache::has("maxloads_{$cacheDate}_{$limit}")) {
 
-            $calls = $data->filter(function($item) use ($day_time) {
-
-                $minute_end = Carbon::parse($day_time->toDateTimeString())->addMinute();
-
-                return ($item['start_date_ts'] < $day_time->timestamp && $item['end_date_ts'] >= $day_time->timestamp)
-                || ($item['start_date_ts'] >= $day_time->timestamp && $item['start_date_ts'] < $minute_end->timestamp);
-
-            });
-
-            $calls_count = $calls->count();
-
-            $report->put($day_time->format('Y-m-d H:i'),
-                [
-                    'time' => $day_time->format('Y-m-d H:i'),
-                    'count' => $calls_count,
-                    'status' => $calls_count > $limit ? 'overload' : 'ok'
-                ]
-            );
-
-            $day_time->addMinute();
+            $report = collect(Cache::get("maxloads_{$cacheDate}_{$limit}"));
         }
-        return $report->sortKeysDesc()->values()->toArray();
+
+        else {
+
+            $report = collect();
+
+            while ($day_time->lt($day_end)) {
+
+                $calls = $data->filter(function($item) use ($day_time) {
+
+                    $minute_end = Carbon::parse($day_time->toDateTimeString())->addMinute();
+
+                    return ($item['start_date_ts'] < $day_time->timestamp && $item['end_date_ts'] >= $day_time->timestamp)
+                    || ($item['start_date_ts'] >= $day_time->timestamp && $item['start_date_ts'] < $minute_end->timestamp);
+
+                });
+
+                $calls_count = $calls->count();
+
+                $report->put($day_time->format('Y-m-d H:i'),
+                    [
+                        'time' => $day_time->format('Y-m-d H:i'),
+                        'count' => $calls_count,
+                        'status' => $calls_count > $limit ? 'overload' : 'ok'
+                    ]
+                );
+
+                $day_time->addMinute();
+            }
+            $report = $report->sortKeysDesc()->values();
+
+            Cache::put("maxloads_{$cacheDate}_{$limit}", $report->toArray(), now()->addMinutes(60));
+        }
+
+        $pagination = self::paginateData($report,$page,$perPage)->toArray();
+
+        return [
+            'date' => $date,
+            'limit' => $limit,
+            'data' => $pagination['data'],
+            'count' => $report->count(),
+            'page'  => $pagination['page'],
+            'onPage' => $perPage
+        ];
     }
 }

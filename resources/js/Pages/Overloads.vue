@@ -44,7 +44,7 @@
 
 </template>
 <script>
-   import { Inertia } from '@inertiajs/inertia'
+    import { Inertia } from '@inertiajs/inertia'
     import Layout from '../Shared/Layout'
     import Pagination from '../Shared/Pagination'
     import lodash from 'lodash'
